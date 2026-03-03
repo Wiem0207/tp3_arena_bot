@@ -23,8 +23,8 @@ use protocol::{ClientMsg, ServerMsg};
 
 // ─── Configuration ──────────────────────────────────────────────────────────
 
-const SERVER_URL: &str = "ws://127.0.0.1:4000/ws";
-const TEAM_NAME: &str = "mon_equipe";
+const SERVER_URL: &str = "wss://respond-comm-moscow-libs.trycloudflare.com/ws";
+const TEAM_NAME: &str = "Wiem";
 const AGENT_NAME: &str = "bot_1";
 const NUM_MINERS: usize = 4;
 
