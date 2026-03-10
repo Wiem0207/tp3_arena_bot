@@ -38,52 +38,78 @@ pub struct AgentInfo {
     pub y: u16,
 }
 
-// TODO: Définir la structure GameState.
-//
-// Elle doit contenir au minimum :
-//   - agent_id: Uuid           → votre identifiant (reçu dans Hello)
-//   - tick: u64                → tick courant du serveur
-//   - position: (u16, u16)    → votre position (x, y)
-//   - map_size: (u16, u16)    → dimensions de la carte (width, height)
-//   - goal: u32               → score objectif
-//   - obstacles: Vec<(u16, u16)>
-//   - resources: Vec<ResourceInfo>
-//   - agents: Vec<AgentInfo>
-//   - team_scores: HashMap<String, u32>
-//
-// pub struct GameState {
-//     ...
-// }
+pub struct GameState{
+    pub agent_id: Uuid,
+    pub tick:u64, 
+    pub position:(u16,u16),
+    pub map_size:(u16,u16),
+    pub goal: u32,
+    pub obstacles:  Vec<(u16,u16)>,
+    pub resources:  Vec<ResourceInfo>,
+    pub agents: Vec<AgentInfo> ,
+    pub team_score: HashMap<String,u32>,
+}
+impl GameState{
+    pub fn new(agent_id:Uuid)->Self{
+        Self {
+            agent_id,
+            tick:0,
+            position:(0,0),
+            map_size:(0,0),
+            goal:0,
+            obstacles: Vec::new() ,
+            resources : Vec::new(),
+            agents : Vec::new(),
+            team_score: HashMap::new()
+        }
+    }
+    pub fn update(&mut self, msg: &ServerMsg){
+        match msg {
+            ServerMsg::State { tick, width, height, goal, obstacles, resources, agents }=> {
+            self.tick=*tick ;
+            self.map_size=(*width,*height) ;
+            self.goal=*goal ; 
+            self.obstacles=obstacles.clone() ;
+            self.agents = agents
+            .iter()
+            .map(|(id, name, team, score, x, y)| {
+                if *id == self.agent_id {
+                    self.position = (*x, *y);
+                }
+                AgentInfo {
+                    id: *id,
+                    name: name.clone(),
+                    team: team.clone(),
+                    score: *score,
+                    x: *x,
+                    y: *y,
+                }
+            })
+            .collect();
+           self.resources = resources
+            .iter()
+            .map(|(id, x, y, expires_at, _points)| ResourceInfo {
+                resource_id: *id,
+                x: *x,
+                y: *y,
+                expires_at: *expires_at,
+            })
+            .collect();
+            self.team_score.clear() ;
+            for (id, name, team, score, x, y) in agents {
+                self.team_score.insert(team.clone(),*score) ;
+            }
+            }
+            ServerMsg::PowResult{resource_id,..}=>{
+                self.resources.retain(|r| r.resource_id != *resource_id);
+            }
+            _ => {} 
+    }
+}
+}
 
-// TODO: Implémenter GameState.
-//
-// impl GameState {
-//     /// Crée un état initial avec l'agent_id reçu du serveur.
-//     pub fn new(agent_id: Uuid) -> Self {
-//         ...
-//     }
-//
-//     /// Met à jour l'état à partir d'un message serveur.
-//     ///
-//     /// Doit gérer au minimum :
-//     ///   - ServerMsg::State { .. } → mettre à jour tick, position, resources, agents, etc.
-//     ///     Indice : votre position est dans la liste `agents`, trouvez-la par agent_id.
-//     ///   - ServerMsg::PowResult { resource_id, .. } → retirer la ressource de la liste.
-//     ///
-//     /// Les autres messages peuvent être ignorés ici.
-//     pub fn update(&mut self, msg: &ServerMsg) {
-//         ...
-//     }
-// }
-
-// TODO: Définir le type alias SharedState.
-//
-// C'est un Arc<Mutex<GameState>> pour pouvoir le partager entre threads.
-//
-// pub type SharedState = Arc<Mutex<GameState>>;
-//
-// Ajoutez une fonction de construction pratique :
-//
-// pub fn new_shared_state(agent_id: Uuid) -> SharedState {
-//     Arc::new(Mutex::new(GameState::new(agent_id)))
-// }
+// definir un alias est comme ça : 
+pub type SharedState=Arc<Mutex<GameState>> ;
+pub fn new_shared_state(agent_id: Uuid) -> SharedState {
+    Arc::new(Mutex::new(GameState::new(agent_id)))
+}

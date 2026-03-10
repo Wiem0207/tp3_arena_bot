@@ -38,7 +38,7 @@ pub enum ServerMsg {
         height: u16,
         goal: u32,
         obstacles: Vec<(u16, u16)>,
-        resources: Vec<(Uuid, u16, u16, u64)>,
+        resources: Vec<(Uuid, u16, u16, u64, u32)>,
         agents: Vec<(Uuid, String, String, u32, u16, u16)>,
     },
 
